@@ -905,7 +905,328 @@ Future<bool> addToCart(int productId, int quantity) async {
 
 ---
 
-## 🔧 Testing
+## �️ Admin Panel APIs (Requires Admin Authentication)
+
+### Base URL
+```
+http://your-domain.com/api/v1/admin
+```
+
+**Note:** All admin endpoints require authentication with admin role.
+
+**Headers:** `Authorization: Bearer admin_token`
+
+---
+
+## 📊 Dashboard & Statistics
+
+### Get Dashboard
+Get admin dashboard overview statistics.
+
+**GET** `/admin/dashboard`
+
+**Response:**
+```json
+{
+    "success": true,
+    "data": {
+        "total_users": 150,
+        "total_products": 75,
+        "total_orders": 320,
+        "total_revenue": "125000.00",
+        "pending_orders": 8,
+        "delivered_orders": 280,
+        "active_users": 95,
+        "low_stock_products": 12
+    }
+}
+```
+
+### Get Detailed Statistics
+Get detailed statistics for reporting.
+
+**GET** `/admin/stats`
+
+**Query Parameters:**
+- `period` (string): daily|weekly|monthly|yearly
+- `start_date` (date): Start date
+- `end_date` (date): End date
+
+---
+
+## 🏷️ Categories Management (Admin)
+
+### Get All Categories
+Get all categories including inactive ones.
+
+**GET** `/admin/categories`
+
+**Query Parameters:**
+- `search` (string): Search in name
+- `status` (string): active|inactive
+- `parent_id` (integer): Filter by parent
+- `page` (integer): Page number
+
+### Create Category
+**POST** `/admin/categories`
+
+### Update Category
+**PUT** `/admin/categories/{id}`
+
+### Delete Category
+**DELETE** `/admin/categories/{id}`
+
+---
+
+## 📦 Products Management (Admin)
+
+### Get All Products
+Get complete product list including deleted ones.
+
+**GET** `/admin/products`
+
+**Query Parameters:**
+- `search` (string): Search in name, SKU
+- `category_id` (integer): Filter by category
+- `status` (string): active|inactive|draft
+- `stock_status` (string): in_stock|low_stock|out_of_stock
+- `featured` (boolean): Filter featured products
+- `trashed` (boolean): Include deleted products
+- `sort_by` (string): name|price|stock|created_at
+- `sort_order` (string): asc|desc
+- `page` (integer): Page number
+
+### Create Product
+**POST** `/admin/products`
+
+### Update Product
+**PUT** `/admin/products/{id}`
+
+### Soft Delete Product
+**DELETE** `/admin/products/{id}`
+
+### Restore Product
+**PATCH** `/admin/products/{id}/restore`
+
+### Force Delete Product
+**DELETE** `/admin/products/{id}/force-delete`
+
+### Update Stock
+**PATCH** `/admin/products/{id}/stock`
+
+---
+
+## 🛍️ Orders Management (Admin)
+
+### Get All Orders
+Get complete orders list with details.
+
+**GET** `/admin/orders`
+
+**Query Parameters:**
+- `search` (string): Search in order number, customer name
+- `status` (string): pending|processing|shipped|delivered|cancelled
+- `payment_status` (string): pending|paid|failed|refunded
+- `start_date` (date): Start date
+- `end_date` (date): End date
+- `customer_id` (integer): Filter by customer
+- `min_amount` (decimal): Minimum order amount
+- `max_amount` (decimal): Maximum order amount
+- `sort_by` (string): created_at|total_amount|customer_name
+- `sort_order` (string): asc|desc
+- `page` (integer): Page number
+
+### Get Order Details
+**GET** `/admin/orders/{id}`
+
+### Update Order
+**PUT** `/admin/orders/{id}`
+
+### Update Payment Status
+**PATCH** `/admin/orders/{id}/payment-status`
+
+### Get Order Statistics
+**GET** `/admin/orders/statistics`
+
+### Export Orders
+**GET** `/admin/orders/export`
+
+---
+
+## 💰 Coupons Management (Admin)
+
+### Get All Coupons
+**GET** `/admin/coupons`
+
+### Create Coupon
+**POST** `/admin/coupons`
+
+### Update Coupon
+**PUT** `/admin/coupons/{id}`
+
+### Delete Coupon
+**DELETE** `/admin/coupons/{id}`
+
+---
+
+## 👥 Users Management (Admin)
+
+### Get All Users
+**GET** `/admin/users`
+
+**Query Parameters:**
+- `search` (string): Search in name, email, phone
+- `role` (string): admin|customer
+- `status` (string): active|inactive
+- `registration_date_from` (date): Registration date from
+- `registration_date_to` (date): Registration date to
+- `sort_by` (string): name|email|created_at|total_orders
+- `sort_order` (string): asc|desc
+- `page` (integer): Page number
+
+### Get User Details
+**GET** `/admin/users/{id}`
+
+### Create User
+**POST** `/admin/users`
+
+### Update User
+**PUT** `/admin/users/{id}`
+
+### Toggle User Status
+**PATCH** `/admin/users/{id}/toggle-status`
+
+### Delete User
+**DELETE** `/admin/users/{id}`
+
+---
+
+## 🏷️ Tags Management (Admin)
+
+### Get All Tags
+**GET** `/admin/tags`
+
+### Create Tag
+**POST** `/admin/tags`
+
+### Update Tag
+**PUT** `/admin/tags/{id}`
+
+### Delete Tag
+**DELETE** `/admin/tags/{id}`
+
+---
+
+## 📋 Flutter Examples (Admin Panel)
+
+### Admin Login Example
+
+```dart
+Future<bool> adminLogin(String email, String password) async {
+  try {
+    final response = await ApiService.post('/login', {
+      'email': email,
+      'password': password,
+    });
+
+    if (response['success'] && response['data']['user']['role'] == 'admin') {
+      ApiService.authToken = response['data']['token'];
+      return true;
+    }
+    return false;
+  } catch (e) {
+    print('Admin login error: $e');
+    return false;
+  }
+}
+```
+
+### Dashboard Stats Example
+
+```dart
+Future<DashboardStats?> getDashboardStats() async {
+  try {
+    final response = await ApiService.get('/admin/dashboard');
+    
+    if (response['success']) {
+      return DashboardStats.fromJson(response['data']);
+    }
+    return null;
+  } catch (e) {
+    print('Error fetching stats: $e');
+    return null;
+  }
+}
+```
+
+### Product Management Example
+
+```dart
+// Get admin products
+Future<List<AdminProduct>> getAdminProducts({
+  String? search,
+  String? status,
+  int page = 1,
+}) async {
+  String query = '?page=$page';
+  if (search != null) query += '&search=$search';
+  if (status != null) query += '&status=$status';
+
+  final response = await ApiService.get('/admin/products$query');
+  
+  if (response['success']) {
+    return (response['data']['data'] as List)
+        .map((item) => AdminProduct.fromJson(item))
+        .toList();
+  }
+  return [];
+}
+
+// Create new product
+Future<bool> createProduct(Map<String, dynamic> productData) async {
+  try {
+    final response = await ApiService.post('/admin/products', productData);
+    return response['success'] == true;
+  } catch (e) {
+    print('Error creating product: $e');
+    return false;
+  }
+}
+
+// Update order status
+Future<bool> updateOrderStatus(int orderId, String status) async {
+  try {
+    final response = await ApiService.put('/admin/orders/$orderId', {
+      'status': status,
+    });
+    return response['success'] == true;
+  } catch (e) {
+    print('Error updating order: $e');
+    return false;
+  }
+}
+```
+
+### User Management Example
+
+```dart
+Future<bool> toggleUserStatus(int userId, bool isActive) async {
+  try {
+    final response = await ApiService.patch(
+      '/admin/users/$userId/toggle-status',
+      {'is_active': isActive}
+    );
+    return response['success'] == true;
+  } catch (e) {
+    print('Error toggling user status: $e');
+    return false;
+  }
+}
+```
+
+---
+
+## �🔧 Testing
 
 ### Testing with Postman
 
@@ -913,6 +1234,7 @@ Future<bool> addToCart(int productId, int quantity) async {
 2. Set up environment variables:
    - `base_url`: Your API base URL
    - `auth_token`: Bearer token after login
+   - `admin_token`: Admin Bearer token for admin APIs
 
 ### Example Postman Collection Structure
 
@@ -937,10 +1259,50 @@ Crypto E-commerce API/
 │   ├── Get Orders
 │   ├── Create Order
 │   └── Get Order Details
-└── Wallet/
-    ├── Get Wallet
-    ├── Get Transactions
-    └── Charge Wallet
+├── Wallet/
+│   ├── Get Wallet
+│   ├── Get Transactions
+│   └── Charge Wallet
+└── Admin Panel/
+    ├── Dashboard/
+    │   ├── Get Dashboard Stats
+    │   └── Get Detailed Statistics
+    ├── Products Management/
+    │   ├── Get All Products
+    │   ├── Create Product
+    │   ├── Update Product
+    │   ├── Delete Product
+    │   ├── Restore Product
+    │   └── Update Stock
+    ├── Categories Management/
+    │   ├── Get All Categories
+    │   ├── Create Category
+    │   ├── Update Category
+    │   └── Delete Category
+    ├── Orders Management/
+    │   ├── Get All Orders
+    │   ├── Get Order Details
+    │   ├── Update Order Status
+    │   ├── Update Payment Status
+    │   ├── Get Order Statistics
+    │   └── Export Orders
+    ├── Users Management/
+    │   ├── Get All Users
+    │   ├── Get User Details
+    │   ├── Create User
+    │   ├── Update User
+    │   ├── Toggle User Status
+    │   └── Delete User
+    ├── Coupons Management/
+    │   ├── Get All Coupons
+    │   ├── Create Coupon
+    │   ├── Update Coupon
+    │   └── Delete Coupon
+    └── Tags Management/
+        ├── Get All Tags
+        ├── Create Tag
+        ├── Update Tag
+        └── Delete Tag
 ```
 
 ---
@@ -957,6 +1319,11 @@ Crypto E-commerce API/
 8. **Backup**: Configure database backups
 9. **SSL**: Enable HTTPS for production
 10. **CDN**: Use CDN for static assets
+11. **Admin Web Panel**: Develop web UI for admin panel
+12. **Role Management**: Extend role system for different admin types
+13. **Activity Logs**: Implement admin activity logging system
+14. **Automated Backups**: Set up automated database backups
+15. **Monitoring**: Set up monitoring and alerting system
 
 ---
 
@@ -964,6 +1331,45 @@ Crypto E-commerce API/
 
 For any questions or issues with the API implementation, please refer to this documentation or contact the development team.
 
+### Quick Start Guide:
+
+1. **For Flutter Developers:**
+   - Use "Customer API" section for customer application
+   - Flutter code examples provided in each section
+
+2. **For Administrators:**
+   - Use "Admin API" section for management panel
+   - Access to statistics, reports, and complete system management
+
+3. **For Testing:**
+   - Complete Postman collection for testing all endpoints
+   - Postman environment variables for easy testing
+
 **API Version:** 1.0  
-**Last Updated:** July 3, 2025  
-**Documentation Version:** 1.0
+**Last Updated:** July 4, 2025  
+**Documentation Version:** 2.0
+
+---
+
+## 📋 Complete Endpoints List
+
+### Customer APIs:
+- **Authentication:** 6 endpoints
+- **Products:** 8 endpoints  
+- **Categories:** 3 endpoints
+- **Cart:** 6 endpoints
+- **Orders:** 5 endpoints
+- **Wallet:** 3 endpoints
+- **Reviews:** 6 endpoints
+- **Search:** 1 endpoint
+
+### Admin APIs:
+- **Dashboard:** 2 endpoints
+- **Products Management:** 7 endpoints
+- **Categories Management:** 5 endpoints
+- **Orders Management:** 7 endpoints
+- **Users Management:** 6 endpoints
+- **Coupons Management:** 5 endpoints
+- **Tags Management:** 4 endpoints
+
+**Total:** 69+ endpoints
